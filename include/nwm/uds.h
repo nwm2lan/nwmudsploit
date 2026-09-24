@@ -4,7 +4,7 @@
  */
 #pragma once
 
-Handle udsNodeInfo;
+Handle uwmNodeInfo;
 
 
 
@@ -14,7 +14,7 @@ Result nwmUdsInit(void);
 /// Exits nwmUds.
 void nwmUdsExit(void);
 
-Result NwmUDS_InitializeWithVersion(udsNodeInfo *nodeinfo, Handle sharedmem_handle, u32 sharedmem_size);
+Result NwmUDS_InitializeWithVersion(uwmNodeInfo *nodeinfo, Handle sharedmem_handle, u32 sharedmem_size);
 
 Result NwmUDS_Bind(u32 BindNodeID, u32 input0, u8 data_channel, u16 NetworkNodeID);
 
