@@ -26,14 +26,14 @@ jobs:
           submodules: recursive
 
       - name: Build with Make
-        run: make all
+        run: make
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: dl
           compression-level: 0
-          path: build/udsploit.3dsx
+          path: udsploit.3dsx
 
       - name: Prepare release assets
         shell: bash
