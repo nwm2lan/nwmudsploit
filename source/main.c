@@ -12,15 +12,29 @@ void print(char *msg, ...);
 
 PrintConsole topScreenConsole;
 
-static inline void gspwn(u32 outPa, u32 inPa, u32 size)
-{
-	gspSetTextureCopyPhys(outPa, inPa, size, 0, 0, 8);
-}
-
 static inline void __flush_prefetch_buffer(void)
 {
     // Similar to isb in newer Arm architecture versions
     __asm__ __volatile__ ("mcr p15, 0, %0, c7, c5, 4" :: "r" (0) : "memory");
+}
+
+// Source: https://github.com/smealum/udsploit/blob/master/source/kernel.c#L11
+static void gspSetTextureCopyPhys(u32 outPa, u32 inPa, u32 size, u32 inDim, u32 outDim, u32 flags)
+{
+	// Ignore results... only reason it would be invalid is if the handle itself is invalid
+	const u32 enableBit = 1;
+
+	GSPGPU_WriteHWRegs(0x1EF00C00 - 0x1EB00000, (u32[]){inPa >> 3, outPa >> 3}, 0x8);
+	GSPGPU_WriteHWRegs(0x1EF00C20 - 0x1EB00000, (u32[]){size, inDim, outDim}, 0xC);
+	GSPGPU_WriteHWRegs(0x1EF00C10 - 0x1EB00000, &flags, 4);
+	GSPGPU_WriteHWRegsWithMask(0x1EF00C18 - 0x1EB00000, &enableBit, 4, &enableBit, 4);
+
+	svcSleepThread(25 * 1000 * 1000LL); // should be enough
+}
+
+static inline void gspwn(u32 outPa, u32 inPa, u32 size)
+{
+	gspSetTextureCopyPhys(outPa, inPa, size, 0, 0, 8);
 }
 
 static void mapL2TableViaGpuDma(const BlobLayout *layout, void *workBuffer)
@@ -86,7 +100,7 @@ int main(void)
 
     if (R_SUCCEEDED(ret)) {
         print("Done.");
-    } else if (R_SUMMARY(ret) == RES_USER_CANCELED) {
+    } else if (R_SUMMARY(ret) == RS_CANCELED) {
         printf("Canceled.\n");
     }
 
