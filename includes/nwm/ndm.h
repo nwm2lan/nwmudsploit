@@ -1,4 +1,6 @@
+/**
 
+*/
 
 Result NDM_EnterExclusiveState(Handle* handle, u32 state);
 
