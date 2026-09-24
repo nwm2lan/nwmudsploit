@@ -27,7 +27,7 @@ void nwmUdsExit(void)
 	svcCloseHandle(nwmUdsHandle);
 }
 
-static Result NwmUDS_InitializeWithVersion(nwmUdsHandle *nodeinfo, Handle sharedmem_handle, u32 sharedmem_size)
+static Result NwmUDS_InitializeWithVersion(uwmNodeInfo *nodeinfo, Handle sharedmem_handle, u32 sharedmem_size)
 {
 	u32* cmdbuf = getThreadCommandBuffer();
 
