@@ -157,8 +157,8 @@ Result udsploit()
 	if(ret) goto fail;
 
 	fail:
-	nwmuExit();
 	nwmUdsExit();
+	ndmuInit();
 	if(sharedmem_handle) svcCloseHandle(sharedmem_handle);
 	if(sharedmem_va) svcControlMemory((u32*)&sharedmem_va, (u32)sharedmem_va, 0, sharedmem_size, 0x1, 0);
 	return ret;
