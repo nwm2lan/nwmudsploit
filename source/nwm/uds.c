@@ -9,7 +9,7 @@
 
 
 
-Handle nwmUdsRefCount;
+Handle nwmUdsHandle;
 static int nwmUdsRefCount = {0};
 
 Result nwmUdsInit(void)
