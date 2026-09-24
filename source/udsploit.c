@@ -7,29 +7,8 @@
 
 #include "nwm/uds.h"
 
-
-// TEMP, so that we can still allocate memory; this is only needed to run in a 3dsx obviously
-extern char* fake_heap_start;
-extern char* fake_heap_end;
-extern u32 __ctru_heap, __ctru_heap_size, __ctru_linear_heap, __ctru_linear_heap_size;
-
-void __attribute__((weak)) __system_allocateHeaps() {
-	u32 tmp=0;
-
-	__ctru_heap_size = 8 * 1024 * 1024;
-
-	// Allocate the application heap
-	__ctru_heap = 0x08000000;
-	svcControlMemory(&tmp, __ctru_heap, 0x0, __ctru_heap_size, MEMOP_ALLOC, MEMPERM_READ | MEMPERM_WRITE);
-
-	// Allocate the linear heap
-	svcControlMemory(&__ctru_linear_heap, 0x0, 0x0, __ctru_linear_heap_size, MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
-
-	// Set up newlib heap
-	fake_heap_start = (char*)__ctru_heap;
-	fake_heap_end = fake_heap_start + __ctru_heap_size;
-
-}
+// http://github.com/devkitPro/libctru/blob/36fe1ada5b7ebe53ba4decda36d764a55f8fefb6/libctru/source/system/allocateHeaps.c
+//https://github.com/devkitPro/libctru/blob/36fe1ada5b7ebe53ba4decda36d764a55f8fefb6/libctru/source/system/ctru_init.C
 
 // la == linear address (output)
 Result allocHeapWithLa(u32 va, u32 size, u32* la)
