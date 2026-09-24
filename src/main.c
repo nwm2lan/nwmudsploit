@@ -44,18 +44,18 @@ int main(void)
     ret = udsploit();
     if (R_SUCCEEDED(ret)) {
         ret = takeOverKernelAndBeyond("boot.bin", 0);
-        print("カーネルを乗っ取っています: 0x%08lX", ret);
+        print("Taking over kernel: 0x%08lX", ret);
     } else {
-        print("失敗");
+        print("Failed");
     }
 
     if (R_SUCCEEDED(ret)) {
-        print("完了。");
+        print("Done.");
     } else if (ret == RES_USER_CANCELED) {
-        printf("キャンセルしました。\n");
+        printf("Canceled.\n");
     }
 
-    print("終了: START ボタン");
+    print("Exit: START");
 
     while (aptMainLoop()) {
         hidScanInput();
