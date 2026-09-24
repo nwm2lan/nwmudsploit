@@ -3,7 +3,7 @@
 #include <malloc.h>
 
 #include <3ds.h>
-#include <3ds/service/ndm.h>
+#include <3ds/services/ndm.h>
 
 #include "include/nwm/uds.h"
 
