@@ -4,43 +4,61 @@
 
 #include <3ds.h>
 
+// https://rgbcolorpicker.com/0-1
+#define ERROR_COLOR 0b1001
+#define SUCCESS_COLOR 0b1010
+#define WHITE_COLOR 0b1111
+
+
+
 Result udsploit();
 Result hook_kernel();
 
-int main(int argc, char **argv)
+void print(char *msg, ...);
+
+Result res = 0;
+PrintConsole topScreenConsole;
+
+int main(void)
 {
-	gfxInitDefault();
-	consoleInit(GFX_TOP, NULL);
+    gfxInitDefault();
+    consoleInit(GFX_TOP, &topScreenConsole);
+    topScreenConsole.bg = ERROR_COLOR;
+    topScreenConsole.fg = WHITE_COLOR;
 
-	Result ret = 0;
+    consoleClear();
 
-	ret = udsploit();
-	printf("%08X\n", (unsigned int)ret);
-	if(ret) goto fail;
-	
-	printf("udsploit success\n");
-
-	ret = hook_kernel();
-	printf("%08X\n", (unsigned int)ret);
-	if(ret) goto fail;
-
-	fail:
-	// Main loop
-	while (aptMainLoop()) {
-
-		gspWaitForVBlank();
-		hidScanInput();
-
-		// Your code goes here
-
-		u32 kDown = hidKeysDown();
-		if (kDown & KEY_START) break; // break in order to return to hbmenu
-
-		// Flush and swap framebuffers
-		gfxFlushBuffers();
-		gfxSwapBuffers();
+	res = udsploit();
+	if(R_SUCCESS(res){
+		res = hook_kernel();
+		print("Success");
+	}else{
+		print("SHIPPAI");
 	}
 
-	gfxExit();
-	return 0;
+
+
+    print("Exit: START Button");
+
+    while (aptMainLoop())
+    {
+        hidScanInput();
+        if (hidKeysDown() & KEY_START)
+			break;
+    }
+    consoleClear();
+    gfxExit();
+    return 0;
+}
+
+static u8 y = 0;
+
+void print(char *msg, ...)
+{
+    va_list args;
+    char s[100] = {0};
+    va_start(args, msg);
+    vsprintf(s, msg, args);
+    printf("\x1b[%u;1H %s", ++y, s);
+    va_end(args);
 }
