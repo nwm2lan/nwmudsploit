@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <3ds.h>
+#include <3ds/types.h>
 
 #include "../kernelhaxcode_3ds/takeover.h"
 #include "kernelhaxcode_3ds_bin.h"
