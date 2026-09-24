@@ -118,7 +118,7 @@ Result udsploit()
 	if(ret) goto fail;
 
 	printf("udsploit: NwmUDS_InitializeWithVersion\n");
-	udsNodeInfo nodeinfo = {0};
+	uwmNodeInfo nodeinfo = {0};
 	ret = NwmUDS_InitializeWithVersion(&nodeinfo, sharedmem_handle, sharedmem_size);
 	if(ret) goto fail;
 
