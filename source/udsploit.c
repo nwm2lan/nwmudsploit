@@ -5,7 +5,7 @@
 #include <3ds.h>
 
 #include "nwm/uds.h"
-#include "nwm/ndm.h"
+#include "ndm/u.h"
 
 
 
