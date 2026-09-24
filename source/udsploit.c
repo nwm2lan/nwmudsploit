@@ -3,7 +3,6 @@
 #include <malloc.h>
 
 #include <3ds.h>
-
 #include <3ds/service/ndm.h>
 
 #include "nwm/uds.h"
@@ -88,7 +87,7 @@ Result udsploit()
 	u32 sharedmem_va = 0x0dead000, sharedmem_la = 0;
 
 	printf("udsploit: srvGetServiceHandle\n");
-	ret = srvGetServiceHandle(&udsHandle, "nwm::UDS");
+	ret = nwmuInit();
 	if(ret) goto fail;
 
 	printf("udsploit: srvGetServiceHandle\n");
@@ -116,18 +115,18 @@ Result udsploit()
 	ret = NDMU_EnterExclusiveState(2); // EXCLUSIVE_STATE_LOCAL_COMMUNICATIONS
 	if(ret) goto fail;
 
-	printf("udsploit: UDS_InitializeWithVersion\n");
+	printf("udsploit: NwmUDS_InitializeWithVersion\n");
 	udsNodeInfo nodeinfo = {0};
-	ret = UDS_InitializeWithVersion(&udsHandle, &nodeinfo, sharedmem_handle, sharedmem_size);
+	ret = NwmUDS_InitializeWithVersion(&nodeinfo, sharedmem_handle, sharedmem_size);
 	if(ret) goto fail;
 
 	printf("udsploit: NDMU_LeaveExclusiveState\n");
 	ret = NDMU_LeaveExclusiveState();
 	if(ret) goto fail;
 
-	printf("udsploit: UDS_Bind\n");
+	printf("udsploit: NwmUDS_Bind\n");
 	u32 BindNodeID = 1;
-	ret = UDS_Bind(&udsHandle, BindNodeID, 0xff0, 1, 0);
+	ret = NwmUDS_Bind(BindNodeID, 0xff0, 1, 0);
 	if(ret) goto fail;
 
 	{
@@ -151,12 +150,12 @@ Result udsploit()
 		linearFree(buffer);
 	}
 
-	printf("udsploit: UDS_Unbind\n");
-	ret = UDS_Unbind(&udsHandle, BindNodeID);
+	printf("udsploit: NwmUDS_Unbind\n");
+	ret = NwmUDS_Unbind(BindNodeID);
 	if(ret) goto fail;
 
 	fail:
-	if(udsHandle) UDS_Shutdown(&udsHandle);
+	nwmuExit();
 	ndmuExit();
 	if(sharedmem_handle) svcCloseHandle(sharedmem_handle);
 	if(sharedmem_va) svcControlMemory((u32*)&sharedmem_va, (u32)sharedmem_va, 0, sharedmem_size, 0x1, 0);
