@@ -4,7 +4,7 @@
  */
 #pragma once
 
-Handle sNodeInfo;
+Handle udsNodeInfo;
 
 
 
