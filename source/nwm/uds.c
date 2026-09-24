@@ -5,7 +5,6 @@
 #include <3ds/srv.h>
 #include <3ds/synchronization.h>
 
-Handle nwmUdsHandle;
 static int nwmUdsRefCount;
 
 Result nwmUdsInit(void)
