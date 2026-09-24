@@ -91,28 +91,33 @@ int main(void)
     consoleInit(GFX_TOP, &topScreenConsole);
     consoleClear();
 
-    ret = udsploit();
-    if (R_SUCCEEDED(ret)) {
-        ret = takeOverKernelAndBeyond("boot.bin", 0);
-        print("Taking over kernel: 0x%08lX", ret);
-    } else {
-        print("Failed");
-    }
-
-    if (R_SUCCEEDED(ret)) {
-        print("Done.");
-    } else if (R_SUMMARY(ret) == RS_CANCELED) {
-        printf("Canceled.\n");
-    }
-
-    print("Exit: START");
+    print("start to udsploit");
+    print("Exit: any key");
 
     while (aptMainLoop()) {
+        gfxFlushBuffers();
+			     gfxSwapBuffers();
+		      	gspWaitForVBlank();
         hidScanInput();
         if (hidKeysDown() & KEY_START) {
+            ret = udsploit();
+            if (R_SUCCEEDED(ret)) {
+                ret = takeOverKernelAndBeyond("boot.bin", 0);
+                print("Taking over kernel: 0x%08lX", ret);
+                if (R_SUCCEEDED(ret)) {
+                    print("Done.");
+                } else if (R_SUMMARY(ret) == RS_CANCELED) {
+                    printf("Canceled.\n");
+                }
+
+            } else {
+                print("Failed");
+            }
+         }else{
             break;
-        }
-    }
+         }
+      }
+ }
 
     consoleClear();
     gfxExit();
