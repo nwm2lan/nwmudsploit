@@ -12,7 +12,7 @@ Result nwmUdsInit(void)
 {
 	Result res=0;
 	if (AtomicPostIncrement(&nwmUdsRefCount)) return 0;
-	res = srvGetServiceHandle(&nwmUdsHandle, "nwm::uds");
+	res = srvGetServiceHandle(&nwmUdsHandle, "nwm::UDS");
 	if (R_FAILED(res)) AtomicDecrement(&nwmUdsRefCount);
 	return res;
 }
@@ -23,7 +23,7 @@ void nwmUdsExit(void)
 	svcCloseHandle(nwmUdsHandle);
 }
 
-static Result UDS_InitializeWithVersion(udsNodeInfo *nodeinfo, Handle sharedmem_handle, u32 sharedmem_size)
+static Result NwmUDS_InitializeWithVersion(udsNodeInfo *nodeinfo, Handle sharedmem_handle, u32 sharedmem_size)
 {
 	u32* cmdbuf = getThreadCommandBuffer();
 
@@ -41,7 +41,7 @@ static Result UDS_InitializeWithVersion(udsNodeInfo *nodeinfo, Handle sharedmem_
 	return ret;
 }
 
-static Result UDS_Bind(u32 BindNodeID, u32 input0, u8 data_channel, u16 NetworkNodeID)
+static Result NwmUDS_Bind(u32 BindNodeID, u32 input0, u8 data_channel, u16 NetworkNodeID)
 {
 	u32* cmdbuf = getThreadCommandBuffer();
 
@@ -58,7 +58,7 @@ static Result UDS_Bind(u32 BindNodeID, u32 input0, u8 data_channel, u16 NetworkN
 	return ret;
 }
 
-static Result UDS_Unbind(u32 BindNodeID)
+static Result NwmUDS_Unbind(u32 BindNodeID)
 {
 	u32* cmdbuf = getThreadCommandBuffer();
 
@@ -71,7 +71,7 @@ static Result UDS_Unbind(u32 BindNodeID)
 	return cmdbuf[1];
 }
 
-static Result UDS_Shutdown()
+static Result NwmUDS_Shutdown()
 {
 	u32* cmdbuf = getThreadCommandBuffer();
 
