@@ -5,7 +5,7 @@
 #include <3ds.h>
 #include <3ds/services/ndm.h>
 
-#include "include/nwm/uds.h"
+#include "../include/nwm/uds.h"
 
 // https://github.com/PabloMK7/Luma3DS-Plugin-sample
 // http://github.com/devkitPro/libctru/blob/36fe1ada5b7ebe53ba4decda36d764a55f8fefb6/libctru/source/system/allocateHeaps.c
