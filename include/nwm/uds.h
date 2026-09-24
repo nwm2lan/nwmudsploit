@@ -4,9 +4,7 @@
  */
 #pragma once
 
-Handle uwmNodeInfo;
-
-
+typedef Handle uwmNodeInfo;
 
 /// Initializes nwmUds.
 Result nwmUdsInit(void);
