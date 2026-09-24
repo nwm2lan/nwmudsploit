@@ -1,7 +1,18 @@
-name: Build 3DSX
+name: Build and Release 3DSX
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag (for example, v1.0.0)"
+        required: true
+        type: string
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -9,7 +20,10 @@ jobs:
     container: devkitpro/devkitarm
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out source and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Build with Make
         run: make all
@@ -19,4 +33,23 @@ jobs:
         with:
           name: dl
           compression-level: 0
-          path: build
+          path: build/udsploit.3dsx
+
+      - name: Prepare release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          find . -maxdepth 1 -type f \( -name '*.3dsx' -o -name '*.smdh' \) -exec cp {} dist/ \;
+          test -n "$(find dist -type f -print -quit)"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "$RELEASE_TAG" \
+            --generate-notes
