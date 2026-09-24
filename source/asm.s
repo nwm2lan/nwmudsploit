@@ -2,6 +2,8 @@
 .arm
 .align 4
 
+# https://github.com/LumaTeam/Luma3DS/blob/master/k11_extension/source/svc
+
 .global flush_dcache
 .type flush_dcache, %function
 flush_dcache:
