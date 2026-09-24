@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#include <string.h>
+
 typedef Handle uwmNodeInfo;
 
 /// Initializes nwmUds.
