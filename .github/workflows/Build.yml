@@ -1,55 +1,27 @@
-name: Build and Release 3DSX
+name: Build
 
 on:
   workflow_dispatch:
-    inputs:
-      release_tag:
-        description: "Release tag (for example, v1.0.0)"
-        required: true
-        type: string
-  push:
-    tags:
-      - "v*"
-
-permissions:
-  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: devkitpro/devkitarm
+    container:
+      image: devkitpro/devkitarm:latest
 
     steps:
-      - name: Check out source and submodules
+      - name: Checkout repository and submodules
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
 
-      - name: Build with Make
+      - name: Build
         run: make
 
-      - name: Upload Build Artifacts
+      - name: Upload 3DSX
         uses: actions/upload-artifact@v4
         with:
-          name: dl
-          compression-level: 0
-          path: udsploit.3dsx
-
-      - name: Prepare release assets
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p dist
-          find . -maxdepth 1 -type f \( -name '*.3dsx' -o -name '*.smdh' \) -exec cp {} dist/ \;
-          test -n "$(find dist -type f -print -quit)"
-
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
-        run: |
-          gh release create "$RELEASE_TAG" dist/* \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
-            --title "$RELEASE_TAG" \
-            --generate-notes
+          name: udsploit-build
+          path: *.3dsx
+          if-no-files-found: error
