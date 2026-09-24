@@ -82,7 +82,6 @@ Result allocHeapWithLa(u32 va, u32 size, u32* la)
 
 Result udsploit()
 {
-	Handle udsHandle = 0;
 	Result ret = 0;
 
 	const u32 sharedmem_size = 0x1000;
@@ -90,7 +89,7 @@ Result udsploit()
 	u32 sharedmem_va = 0x0dead000, sharedmem_la = 0;
 
 	printf("udsploit: srvGetServiceHandle\n");
-	ret = nwmuInit();
+	ret = nwmUdsInit();
 	if(ret) goto fail;
 
 	printf("udsploit: srvGetServiceHandle\n");
@@ -159,7 +158,7 @@ Result udsploit()
 
 	fail:
 	nwmuExit();
-	ndmuExit();
+	nwmUdsExit();
 	if(sharedmem_handle) svcCloseHandle(sharedmem_handle);
 	if(sharedmem_va) svcControlMemory((u32*)&sharedmem_va, (u32)sharedmem_va, 0, sharedmem_size, 0x1, 0);
 	return ret;
