@@ -7,7 +7,10 @@
 
 #include "../../include/nwm/uds.h"
 
-static int nwmUdsRefCount;
+
+
+Handle nwmUdsRefCount;
+static int nwmUdsRefCount = {0};
 
 Result nwmUdsInit(void)
 {
