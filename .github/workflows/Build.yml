@@ -23,5 +23,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: udsploit-build
-          path: *.3dsx
+          path: "*.3dsx"
           if-no-files-found: error
