@@ -4,9 +4,9 @@
 
 #include <3ds.h>
 
-#include "nwm/uds.h"
-#include "ndm/u.h"
+#include <3ds/service/ndm.h>
 
+#include "nwm/uds.h"
 
 
 // TEMP, so that we can still allocate memory; this is only needed to run in a 3dsx obviously
@@ -81,7 +81,6 @@ Result allocHeapWithLa(u32 va, u32 size, u32* la)
 Result udsploit()
 {
 	Handle udsHandle = 0;
-	Handle ndmHandle = 0;
 	Result ret = 0;
 
 	const u32 sharedmem_size = 0x1000;
@@ -93,7 +92,7 @@ Result udsploit()
 	if(ret) goto fail;
 
 	printf("udsploit: srvGetServiceHandle\n");
-	ret = srvGetServiceHandle(&ndmHandle, "ndm:u");
+	ret = ndmuInit();
 	if(ret) goto fail;
 
 	{
@@ -113,8 +112,8 @@ Result udsploit()
 		if(ret) goto fail;
 	}
 
-	printf("udsploit: NDM_EnterExclusiveState\n");
-	ret = NDM_EnterExclusiveState(&ndmHandle, 2); // EXCLUSIVE_STATE_LOCAL_COMMUNICATIONS
+	printf("udsploit: NDMU_EnterExclusiveState\n");
+	ret = NDMU_EnterExclusiveState(2); // EXCLUSIVE_STATE_LOCAL_COMMUNICATIONS
 	if(ret) goto fail;
 
 	printf("udsploit: UDS_InitializeWithVersion\n");
@@ -122,8 +121,8 @@ Result udsploit()
 	ret = UDS_InitializeWithVersion(&udsHandle, &nodeinfo, sharedmem_handle, sharedmem_size);
 	if(ret) goto fail;
 
-	printf("udsploit: NDM_LeaveExclusiveState\n");
-	ret = NDM_LeaveExclusiveState(&ndmHandle);
+	printf("udsploit: NDMU_LeaveExclusiveState\n");
+	ret = NDMU_LeaveExclusiveState();
 	if(ret) goto fail;
 
 	printf("udsploit: UDS_Bind\n");
@@ -158,8 +157,7 @@ Result udsploit()
 
 	fail:
 	if(udsHandle) UDS_Shutdown(&udsHandle);
-	if(ndmHandle) svcCloseHandle(ndmHandle);
-	if(udsHandle) svcCloseHandle(udsHandle);
+	ndmuExit();
 	if(sharedmem_handle) svcCloseHandle(sharedmem_handle);
 	if(sharedmem_va) svcControlMemory((u32*)&sharedmem_va, (u32)sharedmem_va, 0, sharedmem_size, 0x1, 0);
 	return ret;
