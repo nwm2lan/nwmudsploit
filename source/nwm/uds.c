@@ -9,8 +9,8 @@
 
 
 
-Handle nwmUdsHandle;
-static int nwmUdsRefCount = {0};
+Handle nwmUdsHandle = 0;
+int nwmUdsRefCount = 0;
 
 Result nwmUdsInit(void)
 {
@@ -27,7 +27,7 @@ void nwmUdsExit(void)
 	svcCloseHandle(nwmUdsHandle);
 }
 
-static Result NwmUDS_InitializeWithVersion(uwmNodeInfo *nodeinfo, Handle sharedmem_handle, u32 sharedmem_size)
+Result NwmUDS_InitializeWithVersion(uwmNodeInfo *nodeinfo, Handle sharedmem_handle, u32 sharedmem_size)
 {
 	u32* cmdbuf = getThreadCommandBuffer();
 
@@ -45,7 +45,7 @@ static Result NwmUDS_InitializeWithVersion(uwmNodeInfo *nodeinfo, Handle sharedm
 	return ret;
 }
 
-static Result NwmUDS_Bind(u32 BindNodeID, u32 input0, u8 data_channel, u16 NetworkNodeID)
+Result NwmUDS_Bind(u32 BindNodeID, u32 input0, u8 data_channel, u16 NetworkNodeID)
 {
 	u32* cmdbuf = getThreadCommandBuffer();
 
@@ -62,7 +62,7 @@ static Result NwmUDS_Bind(u32 BindNodeID, u32 input0, u8 data_channel, u16 Netwo
 	return ret;
 }
 
-static Result NwmUDS_Unbind(u32 BindNodeID)
+Result NwmUDS_Unbind(u32 BindNodeID)
 {
 	u32* cmdbuf = getThreadCommandBuffer();
 
@@ -75,7 +75,7 @@ static Result NwmUDS_Unbind(u32 BindNodeID)
 	return cmdbuf[1];
 }
 
-static Result NwmUDS_Shutdown()
+Result NwmUDS_Shutdown()
 {
 	u32* cmdbuf = getThreadCommandBuffer();
 
