@@ -1,4 +1,29 @@
-static Result UDS_InitializeWithVersion(Handle* handle, udsNodeInfo *nodeinfo, Handle sharedmem_handle, u32 sharedmem_size)
+#include <3ds/types.h>
+#include <3ds/ipc.h>
+#include <3ds/result.h>
+#include <3ds/svc.h>
+#include <3ds/srv.h>
+#include <3ds/synchronization.h>
+
+Handle nwmUdsHandle;
+static int nwmUdsRefCount;
+
+Result nwmUdsInit(void)
+{
+	Result res=0;
+	if (AtomicPostIncrement(&nwmUdsRefCount)) return 0;
+	res = srvGetServiceHandle(&nwmUdsHandle, "nwm::uds");
+	if (R_FAILED(res)) AtomicDecrement(&nwmUdsRefCount);
+	return res;
+}
+
+void nwmUdsExit(void)
+{
+	if (AtomicDecrement(&nwmUdsRefCount)) return;
+	svcCloseHandle(nwmUdsHandle);
+}
+
+static Result UDS_InitializeWithVersion(udsNodeInfo *nodeinfo, Handle sharedmem_handle, u32 sharedmem_size)
 {
 	u32* cmdbuf = getThreadCommandBuffer();
 
@@ -10,13 +35,13 @@ static Result UDS_InitializeWithVersion(Handle* handle, udsNodeInfo *nodeinfo, H
 	cmdbuf[14] = sharedmem_handle;
 
 	Result ret = 0;
-	if((ret = svcSendSyncRequest(*handle)))return ret;
+	if((ret = svcSendSyncRequest(*nwmUdsHandle)))return ret;
 	ret = cmdbuf[1];
 
 	return ret;
 }
 
-static Result UDS_Bind(Handle* handle, u32 BindNodeID, u32 input0, u8 data_channel, u16 NetworkNodeID)
+static Result UDS_Bind(u32 BindNodeID, u32 input0, u8 data_channel, u16 NetworkNodeID)
 {
 	u32* cmdbuf = getThreadCommandBuffer();
 
@@ -27,13 +52,13 @@ static Result UDS_Bind(Handle* handle, u32 BindNodeID, u32 input0, u8 data_chann
 	cmdbuf[4] = NetworkNodeID;
 
 	Result ret=0;
-	if((ret = svcSendSyncRequest(*handle)))return ret;
+	if((ret = svcSendSyncRequest(*nwmUdsHandle)))return ret;
 	ret = cmdbuf[1];
 
 	return ret;
 }
 
-static Result UDS_Unbind(Handle* handle, u32 BindNodeID)
+static Result UDS_Unbind(u32 BindNodeID)
 {
 	u32* cmdbuf = getThreadCommandBuffer();
 
@@ -41,19 +66,19 @@ static Result UDS_Unbind(Handle* handle, u32 BindNodeID)
 	cmdbuf[1] = BindNodeID;
 
 	Result ret = 0;
-	if((ret = svcSendSyncRequest(*handle)))return ret;
+	if((ret = svcSendSyncRequest(*nwmUdsHandle)))return ret;
 
 	return cmdbuf[1];
 }
 
-static Result UDS_Shutdown(Handle* handle)
+static Result UDS_Shutdown()
 {
 	u32* cmdbuf = getThreadCommandBuffer();
 
 	cmdbuf[0] = 0x30000;
 
 	Result ret = 0;
-	if((ret = svcSendSyncRequest(*handle)))return ret;
+	if((ret = svcSendSyncRequest(*nwmUdsHandle)))return ret;
 
 	return cmdbuf[1];
 }
