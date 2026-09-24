@@ -23,19 +23,19 @@ void nwmUdsExit(void)
 	svcCloseHandle(nwmUdsHandle);
 }
 
-static Result NwmUDS_InitializeWithVersion(udsNodeInfo *nodeinfo, Handle sharedmem_handle, u32 sharedmem_size)
+static Result NwmUDS_InitializeWithVersion(nwmUdsHandle *nodeinfo, Handle sharedmem_handle, u32 sharedmem_size)
 {
 	u32* cmdbuf = getThreadCommandBuffer();
 
 	cmdbuf[0] = 0x001B0302;
 	cmdbuf[1] = sharedmem_size;
-	memcpy(&cmdbuf[2], nodeinfo, sizeof(udsNodeInfo));
+	memcpy(&cmdbuf[2], nodeinfo, sizeof(nwmUdsHandle));
 	cmdbuf[12] = 0x400;//version
 	cmdbuf[13] = 0;
 	cmdbuf[14] = sharedmem_handle;
 
 	Result ret = 0;
-	if((ret = svcSendSyncRequest(*nwmUdsHandle)))return ret;
+	if((ret = svcSendSyncRequest(nwmUdsHandle)))return ret;
 	ret = cmdbuf[1];
 
 	return ret;
@@ -52,7 +52,7 @@ static Result NwmUDS_Bind(u32 BindNodeID, u32 input0, u8 data_channel, u16 Netwo
 	cmdbuf[4] = NetworkNodeID;
 
 	Result ret=0;
-	if((ret = svcSendSyncRequest(*nwmUdsHandle)))return ret;
+	if((ret = svcSendSyncRequest(nwmUdsHandle)))return ret;
 	ret = cmdbuf[1];
 
 	return ret;
@@ -66,7 +66,7 @@ static Result NwmUDS_Unbind(u32 BindNodeID)
 	cmdbuf[1] = BindNodeID;
 
 	Result ret = 0;
-	if((ret = svcSendSyncRequest(*nwmUdsHandle)))return ret;
+	if((ret = svcSendSyncRequest(nwmUdsHandle)))return ret;
 
 	return cmdbuf[1];
 }
@@ -78,7 +78,7 @@ static Result NwmUDS_Shutdown()
 	cmdbuf[0] = 0x30000;
 
 	Result ret = 0;
-	if((ret = svcSendSyncRequest(*nwmUdsHandle)))return ret;
+	if((ret = svcSendSyncRequest(nwmUdsHandle)))return ret;
 
 	return cmdbuf[1];
 }
