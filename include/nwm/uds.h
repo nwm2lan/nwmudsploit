@@ -4,6 +4,10 @@
  */
 #pragma once
 
+Handleud sNodeInfo
+
+
+
 /// Initializes nwmUds.
 Result nwmUdsInit(void);
 
