@@ -1,6 +1,11 @@
+#include <string.h>
+#include <stdio.h>
+#include <malloc.h>
 
-Result svcBackdoor(void* target);
-void invalidate_icache();
+// #include <3ds.h>
+#include <3ds/svc.h>
+#include <3ds/services/gspgpu.h>
+#include <3ds/types.h>
 
 // https://github.com/smealum/udsploit/blob/master/source/asm.s#L12
 inline void __flush_prefetch_buffer(void)
@@ -83,7 +88,8 @@ Result Do_KernelBackDoorPatch(const char *payloadFileName, size_t payloadFileOff
 		__dsb();
     	__flush_prefetch_buffer();
 	}
-	
+
+	// https://github.com/TuxSH/universal-otherapp/blob/f6c67f520c8e38cf6a1ab7c68600dd4af827ed3c/source/kernel_gspwn.c#L4
 	// We can now GPU DMA the kernel. Let's map the L2 table we have prepared
     mapL2TableViaGpuDma(layout, layout->smallWorkBuffer);
 
