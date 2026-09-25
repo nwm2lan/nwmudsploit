@@ -222,8 +222,10 @@ int main(int argc, char* argv[])
 	// Main loop
 	while (aptMainLoop())
 	{
-		gspWaitForVBlank();
-		gfxSwapBuffers();
+        gfxFlushBuffers();
+        gfxSwapBuffers();
+        gspWaitForVBlank();
+		
 		hidScanInput();
 
 		kDown = hidKeysDown();
