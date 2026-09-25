@@ -6,7 +6,7 @@
 #include <3ds.h>
 #include <3ds/types.h>
 
-#include "../include/k_patch.h"
+#include "kernel_patch.h"
 
 #include "../kernelhaxcode_3ds/takeover.h"
 #include "kernelhaxcode_3ds_bin.h"
@@ -18,15 +18,15 @@
 #define DEFAULT_PAYLOAD_FILE_NAME   "SafeB9SInstaller.bin"
 #endif
 
+#define PRINT_WRITE  0, 0, 0
+#define PRINT_GREEN  0, 255, 0
+#define PRINT_RED    255, 0, 0
+
 // https://rgbcolorpicker.com/0-1
 #define BLACK_COLOR 0b0000
-#define GREEN_COLOR 0b1010
-#define RED_COLOR 0b0101
-#define WHITE_COLOR 0b1111
+#define RED_COLOR   0b0101
 
 const char *yellow="\x1b[33;1m";
-const char *blue="\x1b[34;1m";
-const char *dblue="\x1b[34;0m";
 const char *white="\x1b[37;1m";
 
 Result udsploit(void);
@@ -66,7 +66,7 @@ void chk_cfw(){
 
 Result exploit(){
     
-	gspSetLcdFill(gspHandle, true, 128, 128, 128);
+	gspSetLcdFill(gspHandle, true, PRINT_WHITE);
 	
     Result ret;
     
@@ -119,7 +119,7 @@ int menu(u32 n){
                 }
 				break;
             case 1:
-				gspSetLcdFill(gspHandle, true, 256, 0, 0);
+				gspSetLcdFill(gspHandle, true, PRINT_GRREEN);
                 res = doPayload(DEFAULT_PAYLOAD_FILE_NAME, DEFAULT_PAYLOAD_FILE_OFFSET);
                 if (R_SUCCEEDED(res)) {
                     return 0;
