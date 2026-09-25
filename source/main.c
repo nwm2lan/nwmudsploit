@@ -171,7 +171,7 @@ int menu(u32 n){
 		switch(cursor){
 			case 0:
                 res = exploit();
-                if(res == -1)){
+                if(res == -1){
                     break;
                 }
 			break;
