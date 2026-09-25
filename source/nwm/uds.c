@@ -5,7 +5,7 @@
 #include <3ds/srv.h>
 #include <3ds/synchronization.h>
 
-#include "include/nwm/uds.h"
+#include "nwm/uds.h"
 
 
 
