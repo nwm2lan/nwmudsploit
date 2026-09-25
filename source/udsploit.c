@@ -3,9 +3,11 @@
 #include <malloc.h>
 
 #include <3ds.h>
+/*
 #include <3ds/services/ndm.h>
+*/
 
-#include "../include/nwm/uds.h"
+#include "nwm/uds.h"
 
 // https://github.com/PabloMK7/Luma3DS-Plugin-sample
 // http://github.com/devkitPro/libctru/blob/36fe1ada5b7ebe53ba4decda36d764a55f8fefb6/libctru/source/system/allocateHeaps.c
@@ -16,11 +18,13 @@ extern char* fake_heap_start;
 extern char* fake_heap_end;
 extern u32 __ctru_heap, __ctru_heap_size, __ctru_linear_heap, __ctru_linear_heap_size;
 
+// https://github.com/devkitPro/libctru/blob/master/libctru/source/allocator/linear.cpp
+
 void __attribute__((weak)) __system_allocateHeaps() {
     u32 tmp = 0;
 
     __ctru_heap_size = 8 * 1024 * 1024;
-    __ctru_linear_heap_size = 8 * 1024 * 1024; // 必須
+    __ctru_linear_heap_size = 8 * 1024 * 1024;
 
 	// Allocate the application heap
     __ctru_heap = 0x08000000;
@@ -33,6 +37,7 @@ void __attribute__((weak)) __system_allocateHeaps() {
     fake_heap_end = fake_heap_start + __ctru_heap_size;
 }
 
+// https://github.com/devkitPro/libctru/blob/36fe1ada5b7ebe53ba4decda36d764a55f8fefb6/libctru/source/system/allocateHeaps.c
 // la == linear address (output)
 Result allocHeapWithLa(u32 va, u32 size, u32* la)
 {
