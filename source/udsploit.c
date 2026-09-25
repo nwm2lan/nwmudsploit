@@ -132,6 +132,12 @@ Result udsploit()
 
 	{
 		unsigned int* buffer = linearAlloc(sharedmem_size);
+		if(buffer == NULL)
+		{
+			printf("udsploit: linearAlloc failed\n");
+			ret = -1;
+			goto fail;
+		}
 
 		GSPGPU_InvalidateDataCache(buffer, sharedmem_size);
 
@@ -141,7 +147,7 @@ Result udsploit()
 
 		int i;
 		for(i = 0; i < 8; i++) printf("%08X %08X %08X %08X\n", buffer[i * 4 + 0], buffer[i * 4 + 1], buffer[i * 4 + 2], buffer[i * 4 + 3]);
-					
+						
 		buffer[3] = 0x1EC40140 - 8;
 
 		GSPGPU_FlushDataCache(buffer, sharedmem_size);
@@ -157,7 +163,7 @@ Result udsploit()
 
 	fail:
 	nwmUdsExit();
-	ndmuInit();
+	ndmuExit();
 	if(sharedmem_handle) svcCloseHandle(sharedmem_handle);
 	if(sharedmem_va) svcControlMemory((u32*)&sharedmem_va, (u32)sharedmem_va, 0, sharedmem_size, 0x1, 0);
 	return ret;
