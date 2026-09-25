@@ -144,14 +144,12 @@ int menu(u32 n){
 	printf("udsploit Loader \nSTATUS: %s\n\n", iscfw ? "cfw":"user");
 
 	char *choices[]={
-        "------------------------",
 		"ZIKKOU      udsploit",
 		"ZIKKOU      boot.bin",
 		"SYUURYOU    to menu",
-        "------------------------",
 	};
 	
-	int maxchoices=sizeof(choices) / sizeof(choices[0]); //each array element is a 32 bit pointer so numElements is sizeof/4 (this is a bad practice but whatever).
+	int maxchoices=sizeof(choices)/4;
 	
 	if(n & KEY_UP) cursor--;
 	else if (n & KEY_DOWN) cursor++;
@@ -204,8 +202,16 @@ int main(int argc, char* argv[])
 	nsInit();
 	fsInit();
 
-	printf("check: cfw\n");
-    chk_cfw();
+	u32 kDown;
+	
+	hidScanInput();
+	kDown = hidKeysDown();
+	if(kDown & KEY_B){
+	    chk_cfw();
+	}else{
+		printf("check: skip");
+		svcSleepThread(500*1000*1000);
+	}
     
 	//printf("%08X\n",(int)res);
 	//printf("%s\n",(char*)path);
@@ -220,8 +226,7 @@ int main(int argc, char* argv[])
 		gfxSwapBuffers();
 		hidScanInput();
 
-		u32 kDown = hidKeysDown();
-		
+		kDown = hidKeysDown();
 		if(kDown & 0xfff){
 			//if(fail) break;
 			res = menu(kDown);
