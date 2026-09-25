@@ -9,6 +9,19 @@
 #include "../kernelhaxcode_3ds/takeover.h"
 #include "kernelhaxcode_3ds_bin.h"
 
+#ifndef DEFAULT_PAYLOAD_FILE_OFFSET
+#define DEFAULT_PAYLOAD_FILE_OFFSET 0
+#endif
+#ifndef DEFAULT_PAYLOAD_FILE_NAME
+#define DEFAULT_PAYLOAD_FILE_NAME   "SafeB9SInstaller.bin"
+#endif
+
+// https://rgbcolorpicker.com/0-1
+#define BLACK_COLOR 0b0000
+#define GREEN_COLOR 0b1010
+#define RED_COLOR 0b0101
+#define WHITE_COLOR 0b1111
+
 const char *yellow="\x1b[33;1m";
 const char *blue="\x1b[34;1m";
 const char *dblue="\x1b[34;0m";
@@ -67,8 +80,10 @@ void mapL2TableViaGpuDma(const BlobLayout *layout, void *workBuffer)
     __flush_prefetch_buffer();
 }
 
-Result takeOverKernelAndBeyond(const char *payloadFileName, size_t payloadFileOffset)
+Result doPayload(const char *payloadFileName, size_t payloadFileOffset)
 {
+	gspSetLcdFill(gspHandle, true, 128, 128, 128);
+	
     BlobLayout *layout = (BlobLayout *)linearMemAlign(sizeof(BlobLayout), 0x1000);
     if (layout == NULL) {
         return -1;
@@ -174,7 +189,7 @@ int menu(u32 n){
                 }
 			break;
             case 1:
-                res = takeOverKernelAndBeyond("boot.bin", 0);
+                res = doPayload(DEFAULT_PAYLOAD_FILE_NAME, DEFAULT_PAYLOAD_FILE_OFFSET);
                 if (R_SUCCEEDED(res)) {
                     return 0;
                 }else{
@@ -192,14 +207,21 @@ int menu(u32 n){
 	return 0;
 }
 
-int main(int argc, char* argv[])
+PrintConsole topScreenConsole;
+
+int main()
 {
 	Result res;
 	gfxInitDefault();
-	consoleInit(GFX_TOP, NULL);
+	consoleInit(GFX_TOP, &topScreenConsole);
+	
+	topScreenConsole.bg = RED_COLOR;
+	topScreenConsole.fg = BLACK_COLOR;
+	
+	consoleClear();
 
+	// chk
 	cfguInit();
-	nsInit();
 	fsInit();
 
 	u32 kDown;
